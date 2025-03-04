@@ -44,11 +44,24 @@ Simply open `index.html` in your preferred web browser.
 
 ## Firebase Database Structure
 ```
-/sensor_data
-    temperature: 25.6
-    humidity: 60
-    light_level: 300
-/led_status: 1 (1 = ON, 0 = OFF)
+{
+  "devices": {
+    "light": false,
+    "led_status": 0
+  },
+  "rfid_access": {
+    "status": "Granted",
+    "timestamp": 1738102204.4162657
+  },
+  "sensor_data": {
+    "humidity": 41,
+    "light_level": 187.5,
+    "rfid_access": "Granted",
+    "temperature": 31.6,
+    "timestamp": 1740817230.4553773
+  },
+  "test": "Connection successful"
+}
 ```
 
 ## How It Works
