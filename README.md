@@ -1,4 +1,4 @@
-# Sensor Dashboard
+# Smart Dorm Room Automation
 
 ## Overview
 The Sensor Dashboard is a web-based application that displays real-time sensor data, including temperature, humidity, and light intensity. It also provides an LED control switch to toggle an LED on or off remotely. The project utilizes Firebase Realtime Database for data storage and retrieval.
