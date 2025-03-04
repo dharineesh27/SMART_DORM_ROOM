@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .dashboard {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+        }
+        .dashboard h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .sensor-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .sensor-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            text-align: center;
+        }
+        .sensor-card h2 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-top: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Sensor Dashboard</h1>
+        <div class="sensor-container">
+            <div class="sensor-card">
+                <h2>Temperature</h2>
+                <canvas id="temperature-gauge"></canvas>
+                <span id="temperature-value">--°C</span>
+            </div>
+            <div class="sensor-card">
+                <h2>Humidity</h2>
+                <canvas id="humidity-gauge"></canvas>
+                <span id="humidity-value">--%</span>
+            </div>
+            <div class="sensor-card">
+                <h2>Light Intensity</h2>
+                <canvas id="light-gauge"></canvas>
+                <span id="light-value">-- lux</span>
+            </div>
+        </div>
+        <div class="sensor-card" style="margin-top: 20px;">
+            <h2>LED Control</h2>
+            <label class="switch">
+                <input type="checkbox" id="led-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+          // Firebase configuration (Replace with your own credentials)
+          const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Reference to the sensor data in Firebase
+        const sensorDataRef = database.ref('/sensor_data');
+
+        // Initialize Chart.js gauges
+        const createGauge = (ctx, label, min, max) => {
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [0, max - min],
+                        backgroundColor: ['#2196F3', '#f0f0f0'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    rotation: -90,
+                    circumference: 180,
+                    cutout: '80%',
+                    plugins: {
+                        tooltip: { enabled: false },
+                        legend: { display: false },
+                    },
+                    animation: { animateRotate: true },
+                }
+            });
+        };
+
+        // Create gauges
+        const temperatureGauge = createGauge(document.getElementById('temperature-gauge'), 'Temperature', 0, 50);
+        const humidityGauge = createGauge(document.getElementById('humidity-gauge'), 'Humidity', 0, 100);
+        const lightGauge = createGauge(document.getElementById('light-gauge'), 'Light', 0, 1000);
+
+        // Update gauges with sensor data
+        const updateGauge = (gauge, value, max) => {
+            gauge.data.datasets[0].data = [value, max - value];
+            gauge.update();
+        };
+
+        // Listen for changes in the sensor data
+        sensorDataRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Update temperature
+                if (data.temperature !== null) {
+                    updateGauge(temperatureGauge, data.temperature, 50);
+                    document.getElementById('temperature-value').textContent = data.temperature + '°C';
+                }
+                // Update humidity
+                if (data.humidity !== null) {
+                    updateGauge(humidityGauge, data.humidity, 100);
+                    document.getElementById('humidity-value').textContent = data.humidity + '%';
+                }
+                // Update light intensity
+                if (data.light_level !== null) {
+                    updateGauge(lightGauge, data.light_level, 1000);
+                    document.getElementById('light-value').textContent = data.light_level + ' lux';
+                }
+            }
+        });
+
+        // LED Toggle Switch
+        const ledToggle = document.getElementById('led-toggle');
+        ledToggle.addEventListener('change', (event) => {
+            const ledState = event.target.checked ? 1 : 0;
+            database.ref('/led_status').set(ledState);
+        });
+
+        // Listen for changes in the LED status
+        const ledStatusRef = database.ref('/led_status');
+        ledStatusRef.on('value', (snapshot) => {
+            const ledState = snapshot.val();
+            if (ledState !== null) {
+                ledToggle.checked = ledState === 1;
+            }
+        });
+    </script>
+</body>
+</html>
